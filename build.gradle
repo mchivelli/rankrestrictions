@@ -133,7 +133,10 @@ repositories {
 }
 
 dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
+    // We don't need FTB Ranks at compile time since we're using reflection
+    // This simplifies our build process and avoids mapping issu
     implementation fg.deobf("curse.maven:minecolonies-245506:5761248")
     runtimeOnly fg.deobf("curse.maven:blockui-522992:5658253")
     runtimeOnly fg.deobf("curse.maven:multi-piston-303278:5204918")
@@ -144,13 +147,10 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:ftb-library-forge-404465:5567591")
     runtimeOnly fg.deobf("curse.maven:sdm-economy-1102542:5749819")
     runtimeOnly fg.deobf("curse.maven:sdm-engine-core-964997:5761090")
-    runtimeOnly fg.deobf("curse.maven:sdm-engine-core-964997:5761090")
     runtimeOnly fg.deobf("curse.maven:sdm-ui-lib-1095061:5736797")
     runtimeOnly fg.deobf("curse.maven:architectury-api-419699:5137938")
     implementation fg.deobf("curse.maven:ftb-teams-forge-404468:5267190")
-    minecraft "net.minecraftforge:forge:1.20.1-47.3.10"
-
-
+    implementation fg.deobf("curse.maven:ftb-ranks-forge-314905:6479947")
 
 }
 
