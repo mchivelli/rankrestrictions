@@ -86,85 +86,67 @@ public class RankRestrictions {
 #                        Uses standard Minecraft color codes (e.g., &c for red).
 #
 # [restrictions]
-#   This section contains restriction rules for different FTBRanks rank IDs.
+#   This section will be automatically populated by the mod with ranks discovered
+#   from your FTBRanks setup. Each discovered rank will initially appear with
+#   an empty 'restriction_sets = []' list.
 #
-#   [restrictions.your_rank_id_here]
-#     Replace 'your_rank_id_here' with the actual ID of an FTBRank (e.g., member, vip, admin).
-#     You can find rank IDs using FTBRanks commands in-game or by looking at FTBRanks config.
+#   To define restrictions for a rank, you will modify its entry.
+#   For example, if FTBRanks has a rank called 'player':
 #
-#     Defining Restriction Sets:
-#       To define a set of restricted items (with an optional custom message) for a rank,
-#       you use the following block structure. A rank can have multiple such blocks.
+#   Initially, you might see this after the mod runs:
+#     [restrictions.player]
+#       restriction_sets = []
 #
-#       [[restrictions.your_rank_id_here.restriction_sets]]
-#         message (Optional): "&cCustom message for this set. %%item%% is the item."
-#         items: ["minecraft:item_one", "modid:item_two", "modid:*", "#forge:tags/example"]
+#   To add restrictions to the 'player' rank, you would change it to:
+#     [restrictions.player]
+#       # This is the first set of restrictions for 'player'
+#       [[restrictions.player.restriction_sets]]
+#         message = "&cPlayers cannot use %%item%%."
+#         items = [
+#           "minecraft:diamond_block",      # Restrict diamond blocks
+#           "mekanism:*",                 # Restrict all items from the Mekanism mod
+#           "#forge:ores/netherite_scrap" # Restrict items with the tag forge:ores/netherite_scrap
+#         ]
 #
-#       - message: A custom message for this specific set. %%item%% is replaced by the item name.
-#                  If omitted, the global 'default_restriction' message is used.
-#       - items: A list of strings defining items to restrict.
-#                Patterns can be:
-#                  1. Exact Item ID: "minecraft:stone" or "modid:itemname"
-#                  2. Mod Wildcard: "modid:*" (restricts all items from 'modid')
-#                                   Example: "mekanism:*"
-#                  3. Item Tag: "#namespace:tag_path" (restricts all items matching this tag)
-#                               Example: "#forge:ores/diamond", "#minecraft:planks"
-#                               (Ensure the tag exists and is loaded by Minecraft/Forge).
+#       # To add a second, different set of restrictions for 'player':
+#       [[restrictions.player.restriction_sets]]
+#         message = "&ePlayers also cannot use %%item%% from this special list."
+#         items = ["minecraft:dragon_egg"]
 #
-# Adding Restrictions to a New or Empty Rank:
-#   If a rank (e.g., 'some_new_rank' or a rank newly added by FTBRanks) shows up as:
-#     [restrictions.some_new_rank]
-#       restriction_sets = [] # This means NO restrictions are currently defined.
+#   Key points for defining restriction sets:
+#     - Each `[[restrictions.your_rank_id.restriction_sets]]` block defines one set of rules.
+#     - `message` (Optional): Custom message for this set. Uses %%item%% placeholder.
+#                             If omitted, 'default_restriction' from [messages] is used.
+#     - `items`: A list of strings specifying what to restrict.
 #
-#   To add restrictions, DELETE the `restriction_sets = []` line entirely and then
-#   add one or more `[[restrictions.some_new_rank.restriction_sets]]` blocks as shown above.
-#   For example:
-#     [restrictions.some_new_rank]
-#       [[restrictions.some_new_rank.restriction_sets]]
-#         message = "&eNewly restricted items for %%item%%!"
-#         items = ["minecraft:bedrock"]
-#       # You could add another [[...]] block here for a second set of restrictions.
+#   Item Pattern Types for the 'items' list:
+#     1. Exact Item ID: "minecraft:stone" or "mod_id:item_name"
+#     2. Mod Wildcard:  "mod_id:*" (restricts all items from 'mod_id')
+#     3. Item Tag:      "#namespace:tag_path" (e.g., "#forge:ores/diamond", "#minecraft:planks")
+#                       (The tag must exist and be loaded by Minecraft/Forge).
+#
+#   The placeholder %%item%% in messages will be replaced with the specific item's display name.
+#
 
 [messages]
 	default_restriction = "&cYou are not allowed to use %%item%% with your current rank!"
 
 [restrictions]
+	# This section is automatically managed by the mod.
+	# - On first load (or if this file is deleted), the mod will discover all ranks
+	#   from FTBRanks and list them here, each with 'restriction_sets = []'.
+	# - You can then edit each rank to add your desired restriction rules as shown in the
+	#   'How To Use' section above.
+	# - If you add new ranks to FTBRanks later, run '/rankrestrictions reload' or restart
+	#   the server, and they will be added here automatically.
+	#
+	# Example (after mod has run and discovered ranks 'member' and 'admin'):
+	# [restrictions.member]
+	#   restriction_sets = []
+	#
+	# [restrictions.admin]
+	#   restriction_sets = []
 
-	# Example of a rank with pre-defined restrictions:
-	[restrictions.member]
-		# Members cannot use diamond swords or diamond pickaxes.
-		[[restrictions.member.restriction_sets]]
-			message = "&cMembers cannot use %%item%%!"
-			items = ["minecraft:diamond_sword", "minecraft:diamond_pickaxe"]
-
-	# Another example with a different set of items:
-	[restrictions.vip]
-		[[restrictions.vip.restriction_sets]]
-			message = "&6VIPs cannot use %%item%%!"
-			items = ["minecraft:command_block"]
-
-	# Example with multiple types of restrictions (exact, mod wildcard, tag):
-	[restrictions.baron]
-		[[restrictions.baron.restriction_sets]]
-			message = "&bBarons are too noble for %%item%%."
-			items = ["minecraft:golden_apple", "examplemod:*", "#forge:ingots/gold"]
-		
-		# To add a second set of restrictions for Barons, you would add another block like this:
-		# [[restrictions.baron.restriction_sets]]
-		#   message = "&bBarons also cannot use netherite."
-		#   items = ["minecraft:netherite_ingot", "minecraft:netherite_sword"]
-
-	# Examples of ranks that are initially empty (as they might be when newly discovered from FTBRanks):
-	# To add restrictions to 'count', DELETE the 'restriction_sets = []' line below
-	# and add one or more '[[restrictions.count.restriction_sets]]' blocks.
-	[restrictions.count]
-		restriction_sets = [] # Currently no restrictions for 'count'. 
-
-	[restrictions.knight]
-		restriction_sets = [] # Currently no restrictions for 'knight'. See 'count' example for how to add them.
-
-	[restrictions.admin]
-		restriction_sets = [] # Admins usually have no restrictions. Add them like for 'count' if needed.
 """;
                 Files.createDirectories(configPath.getParent());
                 Files.writeString(configPath, defaultConfigContent);
