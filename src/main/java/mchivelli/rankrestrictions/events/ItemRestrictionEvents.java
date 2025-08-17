@@ -10,6 +10,8 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
@@ -262,6 +264,56 @@ public class ItemRestrictionEvents {
                 if (itemNameForLog.isEmpty()) itemNameForLog = itemId.toString();
                 RankRestrictions.LOGGER.info("Unequipped restricted item " + itemNameForLog + " from slot " + slot.getName() + 
                                            " for player " + player.getName().getString() + " (rank " + rankId + ")");
+                break;
+            }
+        }
+    }
+    
+    @SubscribeEvent
+    public void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        
+        if (player.isCreative()) {
+            return;
+        }
+
+        if (!RankRestrictions.getInstance().getConfig().isConfigLoaded() || !FTBRanksHelper.isApiAvailable()) {
+            return;
+        }
+
+        Block clickedBlock = event.getLevel().getBlockState(event.getPos()).getBlock();
+        ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(clickedBlock);
+        if (blockId == null) {
+            return;
+        }
+
+        // Check if the block has a block entity (like furnaces, chests, modded machines)
+        BlockEntity blockEntity = event.getLevel().getBlockEntity(event.getPos());
+        if (blockEntity == null) {
+            return; // Only restrict blocks with block entities (interactive blocks)
+        }
+
+        Collection<Object> playerRanks = FTBRanksHelper.getPlayerRanks(player);
+        if (playerRanks.isEmpty()) {
+            return;
+        }
+
+        for (Object rankObj : playerRanks) {
+            String rankId = FTBRanksHelper.getRankName(rankObj);
+            if (rankId == null || rankId.isEmpty()) continue;
+
+            if (RankRestrictions.getInstance().getConfig().isBlockRestrictedForRank(rankId, blockId)) {
+                event.setCanceled(true);
+                String blockName = clickedBlock.getName().getString();
+                if (blockName.isEmpty()) {
+                    blockName = blockId.toString();
+                }
+                String messageFormat = RankRestrictions.getInstance().getConfig().getBlockRestrictionMessage(blockId, rankId);
+                String rawMessage = messageFormat.replace("%item%", blockName);
+                player.sendSystemMessage(Component.literal(rawMessage.replace('&', ChatFormatting.PREFIX_CODE)));
+                
+                RankRestrictions.LOGGER.info("Prevented player " + player.getName().getString() +
+                                          " (rank " + rankId + ") from using restricted block " + blockName);
                 break;
             }
         }

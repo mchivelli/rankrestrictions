@@ -78,11 +78,15 @@ public class RankRestrictions {
                 String defaultConfigContent = """
 # FTBRanks Rank Restrictions Configuration File
 #
+# This mod allows you to restrict both ITEMS and BLOCKS based on player ranks.
+# Items are restricted from inventory, pickup, and usage.
+# Blocks are restricted from interaction (only blocks with block entities like furnaces, machines).
+#
 # How To Use:
 #
 # [messages]
-#   default_restriction: The global default message shown when an item is restricted.
-#                        %%item%% will be replaced with the item's name.
+#   default_restriction: The global default message shown when an item/block is restricted.
+#                        %%item%% will be replaced with the item's or block's name.
 #                        Uses standard Minecraft color codes (e.g., &c for red).
 #
 # [restrictions]
@@ -103,29 +107,53 @@ public class RankRestrictions {
 #       [[restrictions.player.restriction_sets]]
 #         message = "&cPlayers cannot use %%item%%."
 #         items = [
-#           "minecraft:diamond_block",      # Restrict diamond blocks
-#           "mekanism:*",                 # Restrict all items from the Mekanism mod
-#           "#forge:ores/netherite_scrap" # Restrict items with the tag forge:ores/netherite_scrap
+#           "minecraft:diamond_sword",      # Restrict diamond swords
+#           "mekanism:*",                  # Restrict all items from the Mekanism mod
+#           "#minecraft:beds"              # Restrict items with the beds tag
+#         ]
+#         blocks = [
+#           "minecraft:furnace",           # Restrict furnace interaction
+#           "tconstruct:smeltery_controller", # Restrict Tinkers' smeltery
+#           "mekanism:*",                  # Restrict all Mekanism machines
+#           "#minecraft:anvil"             # Restrict anvil interaction (all variants)
 #         ]
 #
 #       # To add a second, different set of restrictions for 'player':
 #       [[restrictions.player.restriction_sets]]
 #         message = "&ePlayers also cannot use %%item%% from this special list."
 #         items = ["minecraft:dragon_egg"]
+#         blocks = ["minecraft:beacon"]
 #
 #   Key points for defining restriction sets:
 #     - Each `[[restrictions.your_rank_id.restriction_sets]]` block defines one set of rules.
 #     - `message` (Optional): Custom message for this set. Uses %%item%% placeholder.
 #                             If omitted, 'default_restriction' from [messages] is used.
-#     - `items`: A list of strings specifying what to restrict.
+#     - `items` (Optional): A list of item restrictions. Can be empty [].
+#     - `blocks` (Optional): A list of block restrictions. Can be empty [].
 #
-#   Item Pattern Types for the 'items' list:
-#     1. Exact Item ID: "minecraft:stone" or "mod_id:item_name"
-#     2. Mod Wildcard:  "mod_id:*" (restricts all items from 'mod_id')
-#     3. Item Tag:      "#namespace:tag_path" (e.g., "#forge:ores/diamond", "#minecraft:planks")
-#                       (The tag must exist and be loaded by Minecraft/Forge).
+#   Pattern Types for both 'items' and 'blocks' lists:
+#     1. Exact ID: "minecraft:diamond_sword" or "tconstruct:smeltery_controller"
+#     2. Mod Wildcard: "mod_id:*" (restricts all items/blocks from 'mod_id')
+#     3. Tag: "#namespace:tag_path" (e.g., "#minecraft:beds", "#forge:chests")
+#            (The tag must exist and be loaded by Minecraft/Forge).
 #
-#   The placeholder %%item%% in messages will be replaced with the specific item's display name.
+#   Block Restrictions (Right-Click Prevention):
+#     - Only affects blocks with block entities that can be right-clicked (interactive blocks)
+#     - Examples: furnaces, chests, crafting tables, modded machines, workbenches
+#     - Prevents right-clicking to open GUIs, access inventories, or interact with the block
+#     - Does NOT affect decorative blocks or blocks without block entities
+#     - Perfect for restricting access to modded machines like Tinkers' forges, Mekanism machines, etc.
+#
+#   Common Block Entity Examples:
+#     - Restrict all Tinkers' Construct machines: "tconstruct:*"
+#     - Restrict all Mekanism machines: "mekanism:*"
+#     - Restrict all Thermal machines: "thermal:*"
+#     - Restrict vanilla furnaces: "minecraft:furnace"
+#     - Restrict all chests (vanilla + modded): "#forge:chests"
+#     - Restrict crafting tables: "minecraft:crafting_table"
+#     - Restrict anvils: "#minecraft:anvil"
+#
+#   The placeholder %%item%% in messages will be replaced with the specific item's or block's display name.
 #
 
 [messages]

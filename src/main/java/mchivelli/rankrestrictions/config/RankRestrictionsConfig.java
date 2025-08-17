@@ -5,6 +5,7 @@ import mchivelli.rankrestrictions.RankRestrictions;
 import mchivelli.rankrestrictions.util.FTBRanksHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.fml.loading.FMLPaths;
 import com.electronwill.nightconfig.core.Config;
@@ -117,9 +118,13 @@ public class RankRestrictionsConfig {
                                                 .filter(List.class::isInstance)
                                                 .map(l -> ((List<?>)l).stream().map(String::valueOf).collect(java.util.stream.Collectors.toList()))
                                                 .orElseGet(ArrayList::new);
+                                            List<String> blocks = setTable.getOptional("blocks")
+                                                .filter(List.class::isInstance)
+                                                .map(l -> ((List<?>)l).stream().map(String::valueOf).collect(java.util.stream.Collectors.toList()))
+                                                .orElseGet(ArrayList::new);
                                             String message = setTable.getOptional("message").map(String::valueOf).orElse(null);
-                                            if (!items.isEmpty()) {
-                                                data.addRestrictionSet(new RestrictionSet(items, message));
+                                            if (!items.isEmpty() || !blocks.isEmpty()) {
+                                                data.addRestrictionSet(new RestrictionSet(items, blocks, message));
                                             }
                                         }
                                     }
@@ -136,7 +141,7 @@ public class RankRestrictionsConfig {
                                             .orElseGet(ArrayList::new));
                                 String legacyMessage = rankConfig.getOptional("messageForRestrictionSet").map(String::valueOf).orElse(null);
                                 if (!legacyRestrictions.isEmpty()) {
-                                    data.addRestrictionSet(new RestrictionSet(legacyRestrictions, legacyMessage));
+                                    data.addRestrictionSet(new RestrictionSet(legacyRestrictions, new ArrayList<>(), legacyMessage));
                                     RankRestrictions.LOGGER.debug("Loaded legacy restrictions as a single set for rank " + rankId);
                                 }
                             }
@@ -182,39 +187,73 @@ public class RankRestrictionsConfig {
             if (isFirstSave) {
                 RankRestrictions.LOGGER.info("Creating new config file with examples...");
                 StringBuilder headerContent = new StringBuilder();
-                headerContent.append("# RankRestrictions Configuration\n");
-                headerContent.append("# Configure item, block and armor restrictions per rank\n\n");
+                headerContent.append("# FTBRanks Rank Restrictions Configuration File\n");
+                headerContent.append("#\n");
+                headerContent.append("# This mod allows you to restrict both ITEMS and BLOCKS based on player ranks.\n");
+                headerContent.append("# Items are restricted from inventory, pickup, and usage.\n");
+                headerContent.append("# Blocks are restricted from interaction (only blocks with block entities like furnaces, machines).\n");
+                headerContent.append("#\n");
                 headerContent.append("# IMPORTANT: FORMATTING GUIDE\n");
                 headerContent.append("# - Each restriction MUST be enclosed in double quotes: \"minecraft:diamond_sword\"\n");
                 headerContent.append("# - Multiple restrictions are placed in an array with square brackets: [ ]\n");
                 headerContent.append("# - Each restriction entry must be separated by a comma except the last one\n");
                 headerContent.append("# - Tags start with #: \"#minecraft:beds\"\n");
-                headerContent.append("# - Comma-separated values in a single entry are supported: \"#forge:tools,minecraft:beacon\"\n\n");
+                headerContent.append("#\n");
+                headerContent.append("# Pattern Types for both 'items' and 'blocks' lists:\n");
+                headerContent.append("#   1. Exact ID: \"minecraft:diamond_sword\" or \"tconstruct:smeltery_controller\"\n");
+                headerContent.append("#   2. Mod Wildcard: \"mod_id:*\" (restricts all items/blocks from 'mod_id')\n");
+                headerContent.append("#   3. Tag: \"#namespace:tag_path\" (e.g., \"#minecraft:beds\", \"#forge:chests\")\n");
+                headerContent.append("#\n");
+                headerContent.append("# Block Restrictions (Right-Click Prevention):\n");
+                headerContent.append("#   - Only affects blocks with block entities that can be right-clicked (interactive blocks)\n");
+                headerContent.append("#   - Examples: furnaces, chests, crafting tables, modded machines, workbenches\n");
+                headerContent.append("#   - Prevents right-clicking to open GUIs, access inventories, or interact with the block\n");
+                headerContent.append("#   - Does NOT affect decorative blocks or blocks without block entities\n");
+                headerContent.append("#   - Perfect for restricting access to modded machines like Tinkers' forges, Mekanism machines, etc.\n");
+                headerContent.append("#\n");
+                headerContent.append("# Common Block Entity Examples:\n");
+                headerContent.append("#   - Restrict all Tinkers' Construct machines: \"tconstruct:*\"\n");
+                headerContent.append("#   - Restrict all Mekanism machines: \"mekanism:*\"\n");
+                headerContent.append("#   - Restrict all Thermal machines: \"thermal:*\"\n");
+                headerContent.append("#   - Restrict vanilla furnaces: \"minecraft:furnace\"\n");
+                headerContent.append("#   - Restrict all chests (vanilla + modded): \"#forge:chests\"\n");
+                headerContent.append("#   - Restrict crafting tables: \"minecraft:crafting_table\"\n");
+                headerContent.append("#   - Restrict anvils: \"#minecraft:anvil\"\n");
+                headerContent.append("#\n");
                 headerContent.append("# COMPLETE EXAMPLES (commented out):\n\n");
                 headerContent.append("# Example configuration with the new 'restriction_sets' format:\n");
                 headerContent.append("# [restrictions.example_rank] # This is the rank ID from FTB Ranks\n");
-                headerContent.append("#   # This rank has two separate restriction sets.\n");
+                headerContent.append("#   # This rank has multiple restriction sets for items and blocks.\n");
                 headerContent.append("#   [[restriction_sets]] # First restriction set for 'example_rank'\n");
                 headerContent.append("#     items = [\n");
                 headerContent.append("#       \"minecraft:diamond_sword\",           # Regular item ID\n");
                 headerContent.append("#       \"minecraft:netherite_pickaxe\",       # Another item\n");
                 headerContent.append("#       \"#minecraft:beds\"                  # Minecraft tag (all bed variants)\n");
                 headerContent.append("#     ]\n");
-                headerContent.append("#     message = \"&cYou cannot use these high-tier tools!\" # Custom message for this set\n");
+                headerContent.append("#     blocks = [\n");
+                headerContent.append("#       \"minecraft:furnace\",               # Regular block ID\n");
+                headerContent.append("#       \"tconstruct:smeltery_controller\",  # Tinkers' Construct smeltery\n");
+                headerContent.append("#       \"tconstruct:*\",                   # All Tinkers' Construct blocks\n");
+                headerContent.append("#       \"#minecraft:anvil\"                # Block tag for all anvil variants\n");
+                headerContent.append("#     ]\n");
+                headerContent.append("#     message = \"&cYou cannot use these high-tier tools and machines!\" # Custom message for this set\n");
                 headerContent.append("#\n");
                 headerContent.append("#   [[restriction_sets]] # Second restriction set for 'example_rank'\n");
                 headerContent.append("#     items = [\"minecraft:rotten_flesh\", \"minecraft:poisonous_potato\"]\n");
+                headerContent.append("#     blocks = [\"mekanism:digital_miner\", \"thermal:*\"] # Restrict specific modded machines\n");
                 headerContent.append("#     # No message here, so it will use the default_restriction message from 'messages' table or a global default.\n");
                 headerContent.append("#\n");
                 headerContent.append("# [restrictions.another_rank]\n");
                 headerContent.append("#   [[restriction_sets]]\n");
                 headerContent.append("#     items = [\"modid:*\"] # Restrict all items from 'modid'\n");
-                headerContent.append("#     message = \"&eItems from this mod are forbidden for your rank.\"\n");
+                headerContent.append("#     blocks = [\"modid:*\"] # Restrict all blocks from 'modid'\n");
+                headerContent.append("#     message = \"&eItems and blocks from this mod are forbidden for your rank.\"\n");
                 headerContent.append("#\n");
                 headerContent.append("# [restrictions.guest] # Example for a guest rank\n");
                 headerContent.append("#   [[restriction_sets]]\n");
                 headerContent.append("#     items = [ \"#forge:chests\", \"minecraft:shulker_box\" ]\n");
-                headerContent.append("#     message = \"&6Guests cannot use storage items like %item%.\"\n");
+                headerContent.append("#     blocks = [ \"minecraft:chest\", \"minecraft:ender_chest\", \"#forge:chests\" ]\n");
+                headerContent.append("#     message = \"&6Guests cannot use storage items or blocks like %item%.\"\n");
                 headerContent.append("#\n");
                 headerContent.append("# [messages]\n");
                 headerContent.append("# default_restriction = \"&cYou are not allowed to use %item% with your current rank!\"\n");
@@ -247,6 +286,7 @@ public class RankRestrictionsConfig {
                 for (RestrictionSet set : data.getRestrictionSets()) {
                     Config setTable = Config.inMemory();
                     setTable.set("items", set.getItems());
+                    setTable.set("blocks", set.getBlocks());
                     if (set.getMessage() != null && !set.getMessage().isEmpty()) {
                         setTable.set("message", set.getMessage());
                     }
@@ -326,8 +366,23 @@ public class RankRestrictionsConfig {
         }
         return false; // Default to not restricted if rank or data not found
     }
+    
+    /**
+     * Checks if a specific block is restricted for a given rank.
+     * @param rankId The ID of the rank to check.
+     * @param blockLocation The ResourceLocation of the block to check.
+     * @return True if the block is restricted for the rank, false otherwise.
+     */
+    public boolean isBlockRestrictedForRank(String rankId, ResourceLocation blockLocation) {
+        RankRestrictionData data = rankRestrictions.get(rankId);
+        if (data != null) {
+            Block blockToCheck = ForgeRegistries.BLOCKS.getValue(blockLocation);
+            return data.isBlockRestricted(blockLocation, blockToCheck); 
+        }
+        return false; // Default to not restricted if rank or data not found
+    }
 
-    // Stub method - gets the specific restriction message for an item and rank
+    // Gets the specific restriction message for an item and rank
     public String getRestrictionMessage(ResourceLocation itemLocation, String rankId) {
         RankRestrictionData data = rankRestrictions.get(rankId);
         if (data != null) {
@@ -345,6 +400,26 @@ public class RankRestrictionsConfig {
         }
         // If no specific message, return the default message
         return defaultRestrictionMessage.replace("%item%", itemLocation.toString());
+    }
+    
+    // Gets the specific restriction message for a block and rank
+    public String getBlockRestrictionMessage(ResourceLocation blockLocation, String rankId) {
+        RankRestrictionData data = rankRestrictions.get(rankId);
+        if (data != null) {
+            // Iterate through restriction sets to find the one that restricts this block
+            Block blockToCheck = ForgeRegistries.BLOCKS.getValue(blockLocation);
+            for (RestrictionSet set : data.getRestrictionSets()) {
+                if (set.isBlockRestricted(blockLocation, blockToCheck)) { // Check if the block is in this specific set
+                    String message = set.getMessage();
+                    if (message != null && !message.isEmpty()) {
+                        return message.replace("%item%", blockLocation.toString());
+                    }
+                    break; // Found the restricting set
+                }
+            }
+        }
+        // If no specific message, return the default message
+        return defaultRestrictionMessage.replace("%item%", blockLocation.toString());
     }
     
     // Method to add or update a restriction for a specific rank and set index

@@ -5,12 +5,13 @@ An addon for FTB Ranks that enforces item, block, and armor restrictions based o
 ## Features
 
 - **Restrict Items By Rank**: Prevent players from using items they shouldn't have access to
+- **Restrict Block Entities By Rank**: Prevent players from interacting with restricted block entities (furnaces, modded machines, etc.)
 - **Multiple Restriction Types**:
-  - Individual item restrictions (e.g., `minecraft:diamond_sword`)
-  - Mod-wide restrictions (e.g., `botania:*` to restrict all items from a mod)
+  - Individual item/block restrictions (e.g., `minecraft:diamond_sword`, `tconstruct:smeltery_controller`)
+  - Mod-wide restrictions (e.g., `botania:*` to restrict all items/blocks from a mod)
   - Tag-based restrictions (e.g., `#minecraft:swords` to restrict all items with the sword tag)
 - **In-game Commands**: Reload configuration without server restart
-- **Real-time Enforcement**: Actively monitors player inventories and equipment
+- **Real-time Enforcement**: Actively monitors player inventories, equipment, and block interactions
 
 ## Installation
 
@@ -26,27 +27,38 @@ After first run, a configuration file will be created at `config/rankrestriction
 
 ```toml
 # Example configuration
-[ranks]
-  [ranks.default]
-    restricted_items = [
+[restrictions.default]
+  [[restriction_sets]]
+    items = [
       "minecraft:diamond_sword",
       "minecraft:netherite_chestplate",
       "botania:*",
       "#minecraft:beds"
     ]
+    blocks = [
+      "minecraft:furnace",
+      "tconstruct:smeltery_controller",
+      "mekanism:*",
+      "#minecraft:anvil"
+    ]
+    message = "&cYou cannot use %item% with your current rank!"
   
-  [ranks.vip]
-    restricted_items = [
+[restrictions.vip]
+  [[restriction_sets]]
+    items = [
       "minecraft:command_block",
       "minecraft:barrier"
+    ]
+    blocks = [
+      "minecraft:command_block"
     ]
 ```
 
 ### Restriction Types
 
-- **Specific item**: `"minecraft:diamond_sword"`
-- **All items from a mod**: `"modid:*"`
-- **Item tag**: `"#minecraft:beds"` (starts with `#`)
+- **Specific item/block**: `"minecraft:diamond_sword"`, `"tconstruct:smeltery_controller"`
+- **All items/blocks from a mod**: `"modid:*"`
+- **Item/block tag**: `"#minecraft:beds"` (starts with `#`)
 
 ## Commands
 
@@ -54,12 +66,15 @@ After first run, a configuration file will be created at `config/rankrestriction
 
 ## Technical Details
 
-RankRestrictions uses reflection to interact with the FTB Ranks API, making it compatible with different versions without hard dependencies. The mod enforces restrictions through two main mechanisms:
+RankRestrictions uses reflection to interact with the FTB Ranks API, making it compatible with different versions without hard dependencies. The mod enforces restrictions through multiple mechanisms:
 
-1. **Player Tick Events**: Checks player inventories every tick
+1. **Player Tick Events**: Checks player inventories every 30 seconds (600 ticks)
 2. **Equipment Change Events**: Monitors equipment slots for restricted items
+3. **Item Pickup Events**: Prevents picking up restricted items
+4. **Item Usage Events**: Prevents using restricted items
+5. **Block Interaction Events**: Prevents interacting with restricted block entities (furnaces, modded machines, etc.)
 
-Restricted items are automatically removed from the player's inventory or equipment when detected.
+Restricted items are automatically removed from the player's inventory or equipment when detected. Block interactions are canceled and the player receives a message explaining the restriction.
 
 ## Dependencies
 

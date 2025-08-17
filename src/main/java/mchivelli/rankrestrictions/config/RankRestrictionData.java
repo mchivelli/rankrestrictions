@@ -3,6 +3,7 @@ package mchivelli.rankrestrictions.config;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
@@ -95,9 +96,9 @@ public class RankRestrictionData {
             ResourceLocation tagId;
             try {
                 if (tagName.contains(":")) {
-                    tagId = new ResourceLocation(tagName);
+                    tagId = ResourceLocation.tryParse(tagName);
                 } else {
-                    tagId = new ResourceLocation("minecraft", tagName); // Default to minecraft namespace
+                    tagId = ResourceLocation.tryParse("minecraft:" + tagName); // Default to minecraft namespace
                 }
                 TagKey<Item> tagKey = TagKey.create(ForgeRegistries.ITEMS.getRegistryKey(), tagId);
                 if (itemToCheck.getDefaultInstance().is(tagKey)) {
@@ -115,6 +116,30 @@ public class RankRestrictionData {
      */
     public boolean isRestricted(ResourceLocation itemRL, Item itemToCheck) {
         return getMatchingRestrictionSet(itemRL, itemToCheck) != null;
+    }
+    
+    /**
+     * Checks if the given block is restricted by any of the RestrictionSets for this rank.
+     * @param blockRL The ResourceLocation of the block to check.
+     * @param blockToCheck The Block object itself.
+     * @return The matching RestrictionSet if the block is restricted, null otherwise.
+     */
+    public RestrictionSet getMatchingBlockRestrictionSet(ResourceLocation blockRL, Block blockToCheck) {
+        if (blockToCheck == null) return null;
+
+        for (RestrictionSet set : restrictionSets) {
+            if (set.isBlockRestricted(blockRL, blockToCheck)) {
+                return set;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Convenience method to quickly check if a block is restricted without needing the specific set.
+     */
+    public boolean isBlockRestricted(ResourceLocation blockRL, Block blockToCheck) {
+        return getMatchingBlockRestrictionSet(blockRL, blockToCheck) != null;
     }
 
     public boolean isEmpty() {
